@@ -1,6 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:meme_man/model/MemeModel.dart';
 import 'package:meme_man/view/add/add_page.dart';
+import 'package:meme_man/db/config_db.dart';
+import 'package:meme_man/view/config/config_page.dart';
+import 'package:meme_man/db/meme_db.dart';
 import 'package:waterfall_flow/waterfall_flow.dart';
 
 import 'home_controller.dart';
@@ -9,6 +15,10 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(HomeController());
+    final dbController = Get.put(MemeData());
+    final prefController = Get.put(ConfigData());
+
+    dbController.load();
     return Scaffold(
       appBar: AppBar(
         title: Text("Meme Manager"),
@@ -17,7 +27,7 @@ class HomePage extends StatelessWidget {
             Icons.menu,
             semanticLabel: "drawer",
           ),
-          onPressed: () => {},
+          onPressed: () {},
         ),
         actions: [
           IconButton(
@@ -25,22 +35,30 @@ class HomePage extends StatelessWidget {
               Icons.search,
               semanticLabel: "search",
             ),
-            onPressed: () => {},
+            onPressed: () {},
           ),
           IconButton(
             icon: Icon(
               Icons.tune,
-              semanticLabel: "search",
+              semanticLabel: "settings",
             ),
-            onPressed: () => {},
+            onPressed: () => {Get.to(() => ConfigPage())},
           )
         ],
       ),
-      body: WaterfallFlow.count(
-        crossAxisCount: 2,
-        padding: EdgeInsets.all(2),
-        children: [MemeCard('name', [], "")],
-      ),
+      body: Obx(() => WaterfallFlow.builder(
+            padding: EdgeInsets.all(2),
+            itemCount: dbController.data.length,
+            gridDelegate: SliverWaterfallFlowDelegateWithFixedCrossAxisCount(
+              crossAxisCount: prefController.previewRowNumber.value,
+              crossAxisSpacing: 5.0,
+              mainAxisSpacing: 5.0,
+            ),
+            itemBuilder: (BuildContext context, int index) {
+              MemeModel item = dbController.data[index];
+              return _MemeCard(item);
+            },
+          )),
       floatingActionButton: FloatingActionButton(
         onPressed: () => {Get.to(() => AddPage())},
         tooltip: 'Add new meme',
@@ -50,27 +68,39 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class MemeCard extends StatelessWidget {
-  MemeCard(this.name, this.tags, this.filePath);
+class _MemeCard extends StatelessWidget {
+  _MemeCard(this.model);
 
-  final String name;
-  final List<String> tags;
-  final String filePath;
+  final MemeModel model;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: Column(
         children: [
-          Text("Image"),
+          Image.file(
+            File(model.path),
+            fit: BoxFit.fill,
+          ),
+          Divider(height: 1.0),
           Padding(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: EdgeInsets.fromLTRB(10, 5, 10, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 7.0),
-                Divider(height: 1.0),
-                Text("Name"),
+                Transform.scale(
+                  scale: 0.7,
+                  alignment: Alignment.topLeft,
+                  child: Wrap(
+                    spacing: 5,
+                    children: model.tags
+                        .map((e) => Chip(
+                              label: Text(e),
+                            ))
+                        .toList(growable: false),
+                  ),
+                ),
+                Text(model.name),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -79,14 +109,35 @@ class MemeCard extends StatelessWidget {
                         Icons.send,
                         semanticLabel: "send",
                       ),
-                      onPressed: () => {},
+                      onPressed: () {
+                        var ctrl = Get.find<HomeController>();
+                        ctrl.shareMeme(model);
+                      },
                     ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.save,
-                        semanticLabel: "save",
-                      ),
-                      onPressed: () => {},
+                    PopupMenuButton(
+                      icon: Icon(Icons.more_vert),
+                      onSelected: (index){},
+                      itemBuilder: (BuildContext ctx) {
+                        HomeController homeCtrl = Get.find<HomeController>();
+                        List<Widget> list = List.empty(growable: true);
+                        list.addIf(
+                            homeCtrl.appWechat.value,
+                            IconButton(
+                              onPressed: () {},
+                              icon: Image.memory(homeCtrl.appIcons["wechat"]),
+                            ));
+                        list.addIf(
+                            homeCtrl.appTim.value,
+                            IconButton(
+                              onPressed: () {
+                                homeCtrl.sendToTim(model);
+                              },
+                              icon: Image.memory(homeCtrl.appIcons["tim"]),
+                            ));
+                        return list
+                            .map((e) => PopupMenuItem(child: e))
+                            .toList(growable: false);
+                      },
                     )
                   ],
                 )

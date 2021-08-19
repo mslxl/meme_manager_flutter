@@ -82,7 +82,7 @@ class AddPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.assignment_turned_in),
-        onPressed: () => {},
+        onPressed: controller.addMeme,
       ),
     );
   }

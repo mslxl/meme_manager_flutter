@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:meme_man/model/MemeModel.dart';
+import 'package:meme_man/db/meme_db.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AddController extends GetxController {
@@ -22,25 +24,33 @@ class AddController extends GetxController {
   addTag() {
     var textController = TextEditingController();
     Get.defaultDialog(
-        title: "New tag",
-        content: Padding(
-          padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
-          child: TextField(
-            decoration: InputDecoration(labelText: "Tag"),
-            controller: textController,
-          ),
+      title: "New tag",
+      content: Padding(
+        padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
+        child: TextField(
+          decoration: InputDecoration(labelText: "Tag"),
+          controller: textController,
         ),
-        onConfirm: () {
-          if(textController.text.isNotEmpty){
-            var newTags = textController.text.split(",").where((element) => !tags.contains(element));
-            tags.addAll(newTags);
-            Get.back();
-          }else{
-            Get.snackbar("Error", "New tag can not be empty!");
-          }
-        },
-        onCancel: () {
+      ),
+      onConfirm: () {
+        if (textController.text.isNotEmpty) {
+          var newTags = textController.text
+              .split(",")
+              .expand((element) => element.split("，"))
+              .where((element) => !tags.contains(element));
+          tags.addAll(newTags);
           Get.back();
-        });
+        } else {
+          Get.snackbar("Error", "New tag can not be empty!");
+        }
+      },
+    );
+  }
+
+  addMeme() async {
+    var memeController = Get.find<MemeData>();
+    var model = MemeModel(controllerName.text, tags.cast(), imagePath.value);
+    memeController.add(model);
+    Get.back();
   }
 }
