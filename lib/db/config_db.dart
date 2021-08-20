@@ -36,6 +36,8 @@ class ConfigData extends GetxController {
   }
 
   setNoMediaStatus(bool status) async {
+    var prefs = await SharedPreferences.getInstance();
+    prefs.setBool("nomedia", status);
     isNoMedia.value = status;
     var filePath = (await getStorageLocation()) + "/.nomedia";
     var file = File(filePath);

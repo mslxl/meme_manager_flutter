@@ -15,27 +15,34 @@ class MemeData extends GetxController {
   var data = RxList.empty(growable: false);
 
   Future<Database> _getDB() async {
-    var conf = Get.find<ConfigData>();
-    var path = (await conf.getStorageLocation()) + "/meme.db";
-    return await openDatabase(path, version: currentVersion,
-        onCreate: (Database db, int version) async {
-      db.execute(
-          "create table Item ( id integer primary key autoincrement, name text, path text )");
-      db.execute(
-          "create table Tag ( id integer primary key autoincrement, tag text )");
-      db.execute("create table Map ( item integer, tag integer )");
-    }, onDowngrade: (Database db, int oldVersion, int newVersion) {
-      Get.snackbar("Warning",
-          "Database downgrade($oldVersion->$newVersion), we can not promise the program work normally.");
-    }, onUpgrade: (Database db, int oldVersion, int newVersion) async {
-      Get.snackbar("Database upgrade", "$oldVersion -> $newVersion");
-      switch (oldVersion) {
-      }
-    });
+    try {
+      var conf = Get.find<ConfigData>();
+      var path = (await conf.getStorageLocation()) + "/meme.db";
+      return await openDatabase(path, version: currentVersion,
+          onCreate: (Database db, int version) async {
+        db.execute(
+            "create table Item ( id integer primary key autoincrement, name text, path text )");
+        db.execute(
+            "create table Tag ( id integer primary key autoincrement, tag text )");
+        db.execute("create table Map ( item integer, tag integer )");
+      }, onDowngrade: (Database db, int oldVersion, int newVersion) {
+        Get.snackbar("Warning",
+            "Database downgrade($oldVersion->$newVersion), we can not promise the program work normally.");
+      }, onUpgrade: (Database db, int oldVersion, int newVersion) async {
+        Get.snackbar("Database upgrade", "$oldVersion -> $newVersion");
+        switch (oldVersion) {
+        }
+      });
+    } catch (e) {
+      Get.snackbar("Database error", e.toString());
+      throw e;
+    }
   }
 
   load() async {
     if (!_isLoaded) {
+      var conf = Get.find<ConfigData>();
+
       var db = await _getDB();
       var dbItems = await db.query("Item");
       var dbTags = await db.query("Tag");
@@ -54,8 +61,10 @@ class MemeData extends GetxController {
       // Gen id -> meme Mapping
       var id2Meme = Map<String, MemeModel>();
       dbItems.forEach((element) {
-        var item = MemeModel(element["name"].toString(),
-            List.empty(growable: true), element["path"].toString());
+        var item = MemeModel(
+            element["name"].toString(),
+            List.empty(growable: true),
+            conf.storageLocation.value + "/img/" + element["path"].toString());
         id2Meme[element["id"].toString()] = item;
       });
 
@@ -97,7 +106,7 @@ class MemeData extends GetxController {
     // Store meme
     int memeId = await db.insert("Item", {
       "name": memeModel.name,
-      "path": newFile.path,
+      "path": newFile.path.substring(newFile.path.lastIndexOf("/") + 1),
     });
 
     // Check and store tag

@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:meme_man/model/MemeModel.dart';
 import 'package:meme_man/db/meme_db.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:meme_man/util.dart';
 
 class AddController extends GetxController {
   var imagePath = "".obs;
@@ -11,7 +11,7 @@ class AddController extends GetxController {
   TextEditingController controllerName = new TextEditingController();
 
   selectImage() async {
-    if (await Permission.storage.request().isGranted) {
+    if (await requestStoragePermission()) {
       final file = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (file != null) {
         imagePath.value = file.path;
@@ -37,6 +37,7 @@ class AddController extends GetxController {
           var newTags = textController.text
               .split(",")
               .expand((element) => element.split("，"))
+              .map((e) => e.trim())
               .where((element) => !tags.contains(element));
           tags.addAll(newTags);
           Get.back();
