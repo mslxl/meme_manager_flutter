@@ -12,6 +12,23 @@ import 'package:waterfall_flow/waterfall_flow.dart';
 import 'home_controller.dart';
 
 class HomePage extends StatelessWidget {
+  Widget _waterfallBuilder(List<MemeModel> data) {
+    final prefController = Get.find<ConfigData>();
+    return WaterfallFlow.builder(
+      padding: EdgeInsets.all(2),
+      itemCount: data.length,
+      gridDelegate: SliverWaterfallFlowDelegateWithFixedCrossAxisCount(
+        crossAxisCount: prefController.previewRowNumber.value,
+        crossAxisSpacing: 5.0,
+        mainAxisSpacing: 5.0,
+      ),
+      itemBuilder: (BuildContext context, int index) {
+        MemeModel item = data[index];
+        return _MemeCard(item);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(HomeController());
@@ -25,7 +42,6 @@ class HomePage extends StatelessWidget {
         leading: IconButton(
           icon: Icon(
             Icons.menu,
-            semanticLabel: "drawer",
           ),
           onPressed: () {},
         ),
@@ -33,32 +49,22 @@ class HomePage extends StatelessWidget {
           IconButton(
             icon: Icon(
               Icons.search,
-              semanticLabel: "search",
             ),
-            onPressed: () {},
+            onPressed: () {
+              showSearch(
+                  context: context,
+                  delegate: _SearchBarDelegate(_waterfallBuilder));
+            },
           ),
           IconButton(
             icon: Icon(
               Icons.tune,
-              semanticLabel: "settings",
             ),
             onPressed: () => {Get.to(() => ConfigPage())},
           )
         ],
       ),
-      body: Obx(() => WaterfallFlow.builder(
-            padding: EdgeInsets.all(2),
-            itemCount: dbController.data.length,
-            gridDelegate: SliverWaterfallFlowDelegateWithFixedCrossAxisCount(
-              crossAxisCount: prefController.previewRowNumber.value,
-              crossAxisSpacing: 5.0,
-              mainAxisSpacing: 5.0,
-            ),
-            itemBuilder: (BuildContext context, int index) {
-              MemeModel item = dbController.data[index];
-              return _MemeCard(item);
-            },
-          )),
+      body: Obx(() => _waterfallBuilder(dbController.data.cast())),
       floatingActionButton: FloatingActionButton(
         onPressed: () => {Get.to(() => AddPage())},
         tooltip: 'Add new meme',
@@ -116,7 +122,7 @@ class _MemeCard extends StatelessWidget {
                     ),
                     PopupMenuButton(
                       icon: Icon(Icons.more_vert),
-                      onSelected: (index){},
+                      onSelected: (index) {},
                       itemBuilder: (BuildContext ctx) {
                         HomeController homeCtrl = Get.find<HomeController>();
                         List<Widget> list = List.empty(growable: true);
@@ -147,5 +153,127 @@ class _MemeCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _SearchBarDelegate extends SearchDelegate<String> {
+  late List<String> tags;
+  late List<String> title;
+  MemeData db = Get.find<MemeData>();
+  final Widget Function(List<MemeModel>) _waterfallBuilder;
+
+  _SearchBarDelegate(this._waterfallBuilder) {
+    var items = db.data.cast<MemeModel>();
+    tags = items.expand((element) => element.tags).toList(growable: false);
+    title = items.map((e) => e.name).toList(growable: false);
+    title.sort();
+    tags.sort();
+  }
+
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return <Widget>[IconButton(onPressed: () {}, icon: Icon(Icons.search))];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: AnimatedIcon(
+          icon: AnimatedIcons.menu_arrow, progress: transitionAnimation),
+      onPressed: () {
+        if (query.isEmpty) {
+          close(context, "");
+        } else {
+          query = "";
+          showSuggestions(context);
+        }
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    var inputs = query
+        .split(" ")
+        .map((e) => e.trim())
+        .where((element) => element.isNotEmpty)
+        .toList(growable: false);
+    List<MemeModel> result = List.empty(growable: true);
+    ctrl:
+    for (int i = 0; i < db.data.length; i++) {
+      MemeModel e = db.data[i];
+      for (int j = 0; j < inputs.length; j++) {
+        if (!e.tags.contains(inputs[j]) &&
+            !e.name.toLowerCase().contains(inputs[j].toLowerCase())) {
+          continue ctrl;
+        }
+      }
+      result.add(db.data[i]);
+    }
+    return _waterfallBuilder(result);
+  }
+
+  List<String> _analyseQuery(String text) {
+    if (text.isEmpty) {
+      var all = this.tags + this.title;
+      all.sort();
+      return all;
+    }
+    var allInput = text
+        .split(" ")
+        .map((e) => e.trim())
+        .where((element) => element.isNotEmpty);
+    var input = allInput.last;
+    var properTag =
+        this.tags.where((element) => element.startsWith(input)).toList();
+    var properName =
+        this.title.where((element) => element.startsWith(input)).toList();
+    var result = properTag + properName;
+
+    if (result.contains(input)) {
+      result = _analyseQuery("");
+    }
+
+    allInput.forEach((element) {
+      if (result.contains(element)) {
+        result.remove(element);
+      }
+    });
+
+    return result;
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    Widget Function(Widget) wrap = (Widget w) => Padding(
+          padding: EdgeInsets.all(10),
+          child: w,
+        );
+    return wrap(Wrap(
+      spacing: 8,
+      children: _analyseQuery(query)
+          .map((e) => GestureDetector(
+                child: Chip(
+                  label: Text(e),
+                  deleteIcon: Icon(Icons.arrow_drop_up),
+                  onDeleted: () {},
+                ),
+                onTap: () {
+                  var allInput = query
+                      .split(" ")
+                      .map((e) => e.trim())
+                      .where((element) => e.isNotEmpty)
+                      .toList();
+                  if (e.startsWith(allInput.last)) {
+                    allInput[allInput.length - 1] = e;
+                  } else {
+                    allInput.add(e);
+                  }
+                  query =
+                      allInput.reduce((value, element) => "$value $element");
+                },
+              ))
+          .toList(growable: false),
+    ));
   }
 }
