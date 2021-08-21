@@ -1,14 +1,14 @@
-import 'dart:io';
 
-import 'package:android_intent_plus/android_intent.dart';
-import 'package:android_intent_plus/flag.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:meme_man/model/MemeModel.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:device_apps/device_apps.dart';
 
 class HomeController extends GetxController {
+  static const _platform = MethodChannel("mememan/share");
   var appTim = RxBool(false);
+  var appQQ = RxBool(false);
   var appWechat = RxBool(false);
   var appIcons = Map();
 
@@ -22,17 +22,11 @@ class HomeController extends GetxController {
     _queryAppSupport();
   }
 
-  sendToTim(MemeModel meme) {
-    var intent = AndroidIntent(
-      action: "android.intent.action.SEND",
-      flags: [Flag.FLAG_ACTIVITY_NEW_TASK],
-      type: "image/*",
-      componentName: "com.tencent.mobileqq.activity.JumpActivity",
-      arguments:{
-        "android.intent.extra.STREAM": File(meme.path).uri.toString()
-      }
-    );
-    intent.launch();
+  shareMemeTo(MemeModel meme,String target) async {
+    await _platform.invokeMethod("shareTo",{
+      "target": target,
+      "path":meme.path
+    });
   }
 
   _queryAppSupport() async {
@@ -50,6 +44,11 @@ class HomeController extends GetxController {
       appWechat.value = true;
       var app = (await DeviceApps.getApp(p, true)) as ApplicationWithIcon;
       appIcons["wechat"] = app.icon;
+    });
+    detectApp("com.tencent.mobileqq", (p) async {
+      appQQ.value = true;
+      var app = (await DeviceApps.getApp(p, true)) as ApplicationWithIcon;
+      appIcons["qq"] = app.icon;
     });
   }
 }

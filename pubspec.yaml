@@ -22,7 +22,6 @@ dependencies:
   crypto: ^3.0.1
   share_plus: ^2.1.4
   device_apps: ^2.1.1
-  android_intent_plus: ^1.0.2
 
 
 
