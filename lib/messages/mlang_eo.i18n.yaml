@@ -1,0 +1,21 @@
+home:
+  title: Manaĝero de memeo
+  btn_add: Aldonas
+  nav_preference: Prefero
+
+preference:
+  title: Prefero
+  storage_location: Stokado Dosierujo
+
+
+editor:
+  title: Aldono Memeo
+  ok: Jes
+  cancel: Ne
+  type_text: Frazo
+  type_image: Bildo
+
+language:
+  - Angla
+  - Esperanto
+  - Simpligita ĉino

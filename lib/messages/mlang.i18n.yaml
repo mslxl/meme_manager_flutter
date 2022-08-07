@@ -1,0 +1,20 @@
+home:
+  title: Meme Manager
+  btn_add: Add
+  nav_preference: Preference
+
+preference:
+  title: Preference
+  storage_location: Storage Folder
+
+editor:
+  title: Add Meme
+  ok: Done
+  cancel: Cancel
+  type_text: Text
+  type_image: Image
+
+language:
+  - English
+  - Esperanto
+  - Simplified Chinese
