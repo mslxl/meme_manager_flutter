@@ -33,12 +33,32 @@ class MemeDatabase {
     await db.close();
   }
 
+  void registerTagNSP(String tag, Database db) async {
+    var tagSplit = tag.split(":");
+    String nsp = tagSplit[0], tg = tagSplit[1];
+    List<Map> list =
+        await db.rawQuery("SELECT id FROM TagNSP WHERE nsp = ? LIMIT 1", [nsp]);
+    int nspID = -1;
+    if (list.isEmpty) {
+      nspID = await db.rawInsert("INSERT INTO TagNSP(nsp) VALUES(?)", [nsp]);
+    } else {
+      nspID = list.first["id"];
+    }
+    if ((await db.rawQuery(
+            "SELECT id FROM TagNSPContent WHERE id = ? and content = ? LIMIT 1",
+            [nspID, tg]))
+        .isEmpty) {
+      await db.rawInsert(
+          "INSERT INTO TagNSPContent(id,content) VALUES(?,?)", [nspID, tg]);
+    }
+  }
+
   void addMeme(BasicMeme meme) async {
     await withDB((db) async {
       List<int> tagId = List<int>.empty(growable: true);
       for (String tag in meme.tags) {
         List<Map> list = await db
-            .rawQuery("SELECT 1 FROM Tag WHERE name = ? LIMIT 1", [tag]);
+            .rawQuery("SELECT id FROM Tag WHERE name = ? LIMIT 1", [tag]);
         if (list.isEmpty) {
           int id = await db.rawInsert("INSERT INTO Tag(name) VALUES(?)", [tag]);
           tagId.add(id);
@@ -46,6 +66,7 @@ class MemeDatabase {
           int id = list.first['id'];
           tagId.add(id);
         }
+        registerTagNSP(tag, db);
       }
 
       int memeId = await db.rawInsert(
@@ -54,10 +75,10 @@ class MemeDatabase {
 
       for (int tagId in tagId) {
         await db.rawInsert(
-            "INSERT INTO Meme_Tag(meme, tag) = (?,?)", [memeId, tagId]);
+            "INSERT INTO Meme_Tag(meme, tag) VALUES(?,?)", [memeId, tagId]);
       }
 
-      await db.rawInsert("INSERT INTO Addition(id, info) = (?, ?)",
+      await db.rawInsert("INSERT INTO Addition(id, info) VALUES(?, ?)",
           [memeId, meme.dumpAddition()]);
     });
   }

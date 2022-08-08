@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 abstract class BasicMeme {
-  final int id;
+  final int id; // -1 means it haven't been add to db
   String name;
   List<String> tags;
 

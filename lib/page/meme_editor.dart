@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mmm/model/meme.dart';
 import 'package:mmm/page/widget/meme_common_field.dart';
+import 'package:mmm/util/database.dart';
 
 import '../messages/mlang.i18n.dart';
 import '../util/lang_builder.dart';
@@ -54,8 +56,20 @@ class TextMemeEditor extends StatefulWidget {
 class _TextMemeEditorState extends State<TextMemeEditor> {
   TextEditingController textController = TextEditingController();
   Mlang lang = LangBuilder.currentLang;
+  MemeCommonFieldController commonFieldController = MemeCommonFieldController();
 
-  void addMeme() {}
+  void addMeme(BuildContext ctx) async {
+    if (textController.text
+        .trim()
+        .isEmpty) return;
+
+    TextMeme meme = TextMeme(id: -1,
+        name: commonFieldController.nameController.text,
+        tags: commonFieldController.tag,
+        text: textController.text);
+    MemeDatabase().addMeme(meme);
+    Navigator.pop(ctx);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,11 +84,15 @@ class _TextMemeEditorState extends State<TextMemeEditor> {
           maxLines: null,
           autofocus: true,
         ),
-        const MemeCommonField(),
+        MemeCommonField(
+          controller: commonFieldController,
+        ),
         Padding(
           padding: const EdgeInsets.all(10),
           child:
-              ElevatedButton(onPressed: addMeme, child: Text(lang.editor.ok)),
+          ElevatedButton(onPressed: () {
+            addMeme(context);
+          }, child: Text(lang.editor.ok)),
         )
       ],
     );
