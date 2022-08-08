@@ -13,7 +13,17 @@ editor:
   cancel: 取消
   type_text: 文字
   type_image: 图像
+  text_content: 正文
+  text_content_tip: 你能再表演一下那个吗...
+  text_name: 名称
+  text_name_tip: 文件名（不是）
+  btn_add_tag: 新标签
 
+dialogTag:
+  text_nsp: 命名空间
+  text_tag: 标签
+  btn_ok: 添加
+  btn_cancel: 取消
 
 language:
   - 英语

@@ -13,6 +13,17 @@ editor:
   cancel: Cancel
   type_text: Text
   type_image: Image
+  text_content: Meme
+  text_content_tip: A man is walking past a travel agents office when...
+  text_name: Name
+  text_name_tip: A short summary for the meme
+  btn_add_tag: Add New Tag
+
+dialogTag:
+  text_nsp: Namespace
+  text_tag: Tag
+  btn_ok: Apply
+  btn_cancel: Cancel
 
 language:
   - English

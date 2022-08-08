@@ -12,7 +12,7 @@ class Config {
     await withSharedPref((pref) async {
       cfg._storageFolder = pref.getString("storage_folder") ??
           join((await getApplicationDocumentsDirectory()).path, "meme");
-      cfg._currentLang = pref.getInt("lang") ?? 1;
+      cfg._currentLang = pref.getInt("lang") ?? 2;
     });
 
     _INSTANCE = cfg;

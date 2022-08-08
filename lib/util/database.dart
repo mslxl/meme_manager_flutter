@@ -24,6 +24,10 @@ class MemeDatabase {
           "CREATE TABLE Tag(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
       await db.execute("CREATE TABLE Meme_Tag(meme INTEGER, tag INTEGER)");
       await db.execute("CREATE TABLE Addition(id INTEGER, info TEXT)");
+
+      await db.execute(
+          "CREATE TABLE TagNSP(id INTEGER PRIMARY KEY AUTOINCREMENT, nsp TEXT)");
+      await db.execute("CREATE TABLE TagNSPContent(id INTEGER, content TEXT)");
     });
     await op(db);
     await db.close();
