@@ -1,6 +1,12 @@
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mmm/model/meme.dart';
 import 'package:mmm/page/meme_preview.dart';
+import 'package:mmm/page/page_wrapper.dart';
+import 'package:mmm/page/text_meme_editor.dart';
+import 'package:mmm/page/widget/meme_control_pane.dart';
+import 'package:mmm/util/lang_builder.dart';
 
 class MemeCard extends StatelessWidget {
   final Future<BasicMeme> meme;
@@ -43,13 +49,10 @@ class TextMemeCardContent extends StatelessWidget {
 
   const TextMemeCardContent({Key? key, required this.meme}) : super(key: key);
 
-
-
-
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
       child: Column(
         children: [
           GestureDetector(
@@ -65,7 +68,29 @@ class TextMemeCardContent extends StatelessWidget {
             },
           ),
           const Divider(),
-          Text(meme.name, style: const TextStyle(fontWeight: FontWeight.bold))
+          Text(meme.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          MemeControlPane(
+            onCopy: () {
+              Clipboard.setData(ClipboardData(text: meme.text)).then((value) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(LangBuilder.currentLang.preview
+                        .text_copied(meme.name))));
+              });
+            },
+            onEdit: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => PageWrapper(
+                    title: meme.name,
+                    child: TextMemeEditor(
+                      editTarget: meme,
+                    ),
+                  ),
+                ),
+              );
+            },
+          )
         ],
       ),
     );

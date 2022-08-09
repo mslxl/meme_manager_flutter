@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mmm/model/meme.dart';
+import 'package:mmm/page/page_wrapper.dart';
+import 'package:mmm/page/text_meme_editor.dart';
+import 'package:mmm/page/widget/meme_control_pane.dart';
 import 'package:mmm/page/widget/meme_tag_column.dart';
 import 'package:mmm/util/database.dart';
+
+import '../util/lang_builder.dart';
 
 class MemePreviewPage extends StatefulWidget {
   final int memeId;
@@ -23,14 +29,43 @@ class MemePreviewPageState extends State<MemePreviewPage> {
 
   Widget buildMemeWidget(BuildContext context, BasicMeme meme) {
     if (meme is TextMeme) {
-      return Padding(
-        padding: const EdgeInsets.all(15),
-        child: Center(
-          child: Text(
-            meme.text,
-            maxLines: null,
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: Center(
+              child: Text(
+                meme.text,
+                maxLines: null,
+              ),
+            ),
           ),
-        ),
+          MemeControlPane(
+            onCopy: () {
+              Clipboard.setData(ClipboardData(text: meme.text)).then((value) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(LangBuilder.currentLang.preview
+                        .text_copied(meme.name))));
+              });
+            },
+            onEdit: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => PageWrapper(
+                    title: meme.name,
+                    child: TextMemeEditor(
+                      editTarget: meme,
+                    ),
+                  ),
+                ),
+              );
+              setState(() {
+                this.meme = MemeDatabase().getById(widget.memeId);
+              });
+            },
+          )
+        ],
       );
     } else {
       return const Text("TODO");

@@ -7,7 +7,9 @@ import '../messages/mlang.i18n.dart';
 import '../util/lang_builder.dart';
 
 class TextMemeEditor extends StatefulWidget {
-  const TextMemeEditor({Key? key}) : super(key: key);
+  final TextMeme? editTarget;
+
+  const TextMemeEditor({Key? key, this.editTarget}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _TextMemeEditorState();
@@ -18,15 +20,29 @@ class _TextMemeEditorState extends State<TextMemeEditor> {
   Mlang lang = LangBuilder.currentLang;
   MemeCommonFieldController commonFieldController = MemeCommonFieldController();
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.editTarget != null) {
+      setState(() {
+        textController.text = widget.editTarget!.text;
+        commonFieldController.tagMap = widget.editTarget!.tagsWithNSP;
+        commonFieldController.nameController.text = widget.editTarget!.name;
+      });
+    }
+  }
+
   void addMeme(BuildContext ctx) async {
     if (textController.text.trim().isEmpty) return;
 
     TextMeme meme = TextMeme(
-        id: -1,
+        id: widget.editTarget == null ? -1 : widget.editTarget!.id,
         name: commonFieldController.nameController.text,
         tags: commonFieldController.tag);
     meme.text = textController.text;
-    MemeDatabase().addMeme(meme);
+
+    MemeDatabase().addMeme(meme, updateIfExists: true);
+
     Navigator.pop(ctx);
   }
 
@@ -52,7 +68,9 @@ class _TextMemeEditorState extends State<TextMemeEditor> {
               onPressed: () {
                 addMeme(context);
               },
-              child: Text(lang.editor.ok)),
+              child: Text(widget.editTarget == null
+                  ? lang.editor.ok
+                  : lang.editor.ok_edit)),
         )
       ],
     );

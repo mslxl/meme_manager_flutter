@@ -23,22 +23,20 @@ class MemeDatabase {
       String path = await getPath();
       Database db = await openDatabase(path, version: 1,
           onCreate: (Database db, int version) async {
-            debugPrint("Create database $path");
-            await db.execute(
-                "CREATE TABLE Meme(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type TEXT)");
-            await db.execute(
-                "CREATE TABLE Tag(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
-            await db.execute(
-                "CREATE TABLE Meme_Tag(meme INTEGER, tag INTEGER)");
-            await db.execute(
-                "CREATE TABLE Addition(id INTEGER PRIMARY KEY, info TEXT)");
+        debugPrint("Create database $path");
+        await db.execute(
+            "CREATE TABLE Meme(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type TEXT)");
+        await db.execute(
+            "CREATE TABLE Tag(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
+        await db.execute("CREATE TABLE Meme_Tag(meme INTEGER, tag INTEGER)");
+        await db.execute(
+            "CREATE TABLE Addition(id INTEGER PRIMARY KEY, info TEXT)");
 
-            await db.execute(
-                "CREATE TABLE TagNSP(id INTEGER PRIMARY KEY AUTOINCREMENT, nsp TEXT)");
-            await db
-                .execute(
-                "CREATE TABLE TagNSPContent(id INTEGER, content TEXT)");
-          });
+        await db.execute(
+            "CREATE TABLE TagNSP(id INTEGER PRIMARY KEY AUTOINCREMENT, nsp TEXT)");
+        await db
+            .execute("CREATE TABLE TagNSPContent(id INTEGER, content TEXT)");
+      });
       dynamic ret = await op(db);
       await db.close();
       return ret;
@@ -47,10 +45,9 @@ class MemeDatabase {
 
   void registerTagNSP(String tag, Database db) async {
     var tagSplit = tag.split(":");
-    String nsp = tagSplit[0],
-        tg = tagSplit[1];
+    String nsp = tagSplit[0], tg = tagSplit[1];
     List<Map> list =
-    await db.rawQuery("SELECT id FROM TagNSP WHERE nsp = ? LIMIT 1", [nsp]);
+        await db.rawQuery("SELECT id FROM TagNSP WHERE nsp = ? LIMIT 1", [nsp]);
     int nspID = -1;
     if (list.isEmpty) {
       nspID = await db.rawInsert("INSERT INTO TagNSP(nsp) VALUES(?)", [nsp]);
@@ -58,15 +55,15 @@ class MemeDatabase {
       nspID = list.first["id"];
     }
     if ((await db.rawQuery(
-        "SELECT id FROM TagNSPContent WHERE id = ? and content = ? LIMIT 1",
-        [nspID, tg]))
+            "SELECT id FROM TagNSPContent WHERE id = ? and content = ? LIMIT 1",
+            [nspID, tg]))
         .isEmpty) {
       await db.rawInsert(
           "INSERT INTO TagNSPContent(id,content) VALUES(?,?)", [nspID, tg]);
     }
   }
 
-  void addMeme(BasicMeme meme) async {
+  void addMeme(BasicMeme meme, {bool updateIfExists = true}) async {
     await withDB((db) async {
       List<int> tagId = List<int>.empty(growable: true);
       for (String tag in meme.tags) {
@@ -81,18 +78,30 @@ class MemeDatabase {
         }
         registerTagNSP(tag, db);
       }
+      int memeId = -1;
+      bool updateSuccessful = false;
+      if (meme.id != -1 && updateIfExists) {
+        memeId = meme.id;
+        List<Map> record =
+            await db.rawQuery("SELECT id FROM Meme WHERE id = ?", [memeId]);
+        if (record.isNotEmpty) {
+          await db.rawDelete("DELETE FROM Meme_Tag WHERE meme = ?", [memeId]);
+          await db.rawUpdate("UPDATE Addition SET info = ? WHERE id = ?",
+              [meme.dumpAddition(), memeId]);
+          updateSuccessful = true;
+        }
+      }
+      if (!updateSuccessful) {
+        memeId = await db.rawInsert("INSERT INTO Meme(name, type) VALUES(?,?)",
+            [meme.name, meme.getType()]);
 
-      int memeId = await db.rawInsert(
-          "INSERT INTO Meme(name, type) VALUES(?,?)",
-          [meme.name, meme.getType()]);
-
+        await db.rawInsert("INSERT INTO Addition(id, info) VALUES(?, ?)",
+            [memeId, meme.dumpAddition()]);
+      }
       for (int tagId in tagId) {
         await db.rawInsert(
             "INSERT INTO Meme_Tag(meme, tag) VALUES(?,?)", [memeId, tagId]);
       }
-
-      await db.rawInsert("INSERT INTO Addition(id, info) VALUES(?, ?)",
-          [memeId, meme.dumpAddition()]);
     });
   }
 
@@ -103,27 +112,27 @@ class MemeDatabase {
     });
   }
 
-  Future<BasicMeme> _convertToMemeFromIdx(Map<dynamic, dynamic> index,
-      Database db) async {
+  Future<BasicMeme> _convertToMemeFromIdx(
+      Map<dynamic, dynamic> index, Database db) async {
     int memeId = index["id"];
     List<String> tag = List.empty(growable: true);
     String name = index["name"];
     String type = index["type"];
 
     List<Map> tagIds =
-    await db.rawQuery("SELECT tag FROM Meme_Tag Where meme = ?", [memeId]);
+        await db.rawQuery("SELECT tag FROM Meme_Tag Where meme = ?", [memeId]);
     for (var idMap in tagIds) {
       int id = idMap["tag"];
       List<Map> tagMap =
-      await db.rawQuery("SELECT name FROM Tag WHERE id = ?", [id]);
+          await db.rawQuery("SELECT name FROM Tag WHERE id = ?", [id]);
       for (var item in tagMap) {
         tag.add(item["name"]);
       }
     }
     String additionInfo =
-    (await db.rawQuery("SELECT info FROM Addition WHERE id = ?", [memeId]))
-        .first["info"]
-        .toString();
+        (await db.rawQuery("SELECT info FROM Addition WHERE id = ?", [memeId]))
+            .first["info"]
+            .toString();
 
     if (type == "text") {
       var meme = TextMeme(
@@ -148,8 +157,8 @@ class MemeDatabase {
 
   Future<BasicMeme> getById(int id) async {
     return await withDB((db) async {
-      List<Map> idx = await db.rawQuery(
-          "SELECT * FROM Meme WHERE id = ?", [id]);
+      List<Map> idx =
+          await db.rawQuery("SELECT * FROM Meme WHERE id = ?", [id]);
       return _convertToMemeFromIdx(idx.first, db);
     });
   }
@@ -159,7 +168,7 @@ class MemeDatabase {
       List<Map> list = await db.rawQuery(
           "SELECT nsp FROM TagNSP WHERE nsp LIKE ? LIMIT 20", ["$prefix%"]);
       List<String> res =
-      list.map((e) => e["nsp"].toString()).toList(growable: false);
+          list.map((e) => e["nsp"].toString()).toList(growable: false);
       if (kDebugMode) {
         print("nsp with prefix: ${res.toString()}");
       }
@@ -167,14 +176,14 @@ class MemeDatabase {
     });
   }
 
-  Future<List<String>> findTagWithNSPAndPrefix(String nsp,
-      String prefix) async {
+  Future<List<String>> findTagWithNSPAndPrefix(
+      String nsp, String prefix) async {
     return await withDB((db) async {
       List<Map> list = await db.rawQuery(
           "SELECT content FROM TagNSPContent WHERE id = (SELECT id FROM TagNSP WHERE nsp = ?) AND content LIKE ? LIMIT 20",
           [nsp, "$prefix%"]);
       List<String> res =
-      list.map((e) => e["content"].toString()).toList(growable: false);
+          list.map((e) => e["content"].toString()).toList(growable: false);
       if (kDebugMode) {
         print("tag in nsp $nsp with prefix: ${res.toString()}");
       }

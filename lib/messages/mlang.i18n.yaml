@@ -3,6 +3,9 @@ home:
   btn_add: Add
   nav_preference: Preference
 
+preview:
+  text_copied(String name): $name Copied.
+
 preference:
   title: Preference
   storage_location: Storage Folder
@@ -10,6 +13,7 @@ preference:
 editor:
   title: Add Meme
   ok: Done
+  ok_edit: Apply
   cancel: Cancel
   type_text: Text
   type_image: Image
@@ -18,6 +22,8 @@ editor:
   text_name: Name
   text_name_tip: A short summary for the meme
   btn_add_tag: Add New Tag
+  field_empty_tip: Field can't be empty
+  field_col_tip: Text can't include ':'
 
 dialogTag:
   text_nsp: Namespace

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:mmm/page/widget/meme_tag_column.dart';
 import 'package:mmm/util/database.dart';
@@ -90,7 +89,7 @@ class _MemeCommonFieldState extends State<MemeCommonField> {
                             InputDecoration(hintText: lang.dialogTag.text_nsp),
                         validator: (text) {
                           if (text!.contains(":")) {
-                            return "Cannot contains ':'";
+                            return lang.editor.field_col_tip;
                           }
                           return null;
                         },
@@ -104,7 +103,7 @@ class _MemeCommonFieldState extends State<MemeCommonField> {
                                 bottom: Radius.circular(4.0)),
                           ),
                           child: SizedBox(
-                            height: 52.0 * options.length,
+                            height: MediaQuery.of(context).size.height / 3,
                             width: (formKey.currentContext!.findRenderObject()
                                     as RenderBox)
                                 .size
@@ -152,10 +151,10 @@ class _MemeCommonFieldState extends State<MemeCommonField> {
                               hintText: lang.dialogTag.text_tag),
                           validator: (text) {
                             if (text?.trim().isEmpty ?? true) {
-                              return "Cannot be empty";
+                              return lang.editor.field_empty_tip;
                             }
                             if (text!.contains(":")) {
-                              return "Cannot contains ':'";
+                              return lang.editor.field_col_tip;
                             }
                             return null;
                           },
@@ -170,7 +169,7 @@ class _MemeCommonFieldState extends State<MemeCommonField> {
                                 bottom: Radius.circular(4.0)),
                           ),
                           child: SizedBox(
-                            height: MediaQuery.of(context).size.height / 4,
+                            height: MediaQuery.of(context).size.height / 3,
                             width: (formKey.currentContext!.findRenderObject()
                                     as RenderBox)
                                 .size

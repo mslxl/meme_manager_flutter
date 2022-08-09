@@ -3,6 +3,9 @@ home:
   btn_add: Aldonas
   nav_preference: Prefero
 
+preview:
+  text_copied(String name): $name Kopis.
+
 preference:
   title: Prefero
   storage_location: Stokado Dosierujo
@@ -11,6 +14,7 @@ preference:
 editor:
   title: Aldono Memeo
   ok: Jes
+  ok_edit: Aplikas
   cancel: Ne
   type_text: Frazo
   type_image: Bildo
@@ -19,6 +23,8 @@ editor:
   text_name: Namo
   text_name_tip: Mallonga resumo por la memeo
   btn_add_tag: Aldonas Nova Etikedo
+  field_empty_tip: Ĝi ne povas esti malplena
+  field_col_tip: Teksto ne povas inkluzivi ':'
 
 dialogTag:
   text_nsp: Nomspaco
