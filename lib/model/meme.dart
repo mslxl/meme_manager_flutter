@@ -58,22 +58,18 @@ class TextMeme extends BasicMeme {
 }
 
 class ImageMeme extends BasicMeme {
-  String imgPath;
+  late String imgName;
 
-  ImageMeme(
-      {required super.id,
-      required super.name,
-      required super.tags,
-      required this.imgPath});
+  ImageMeme({required super.id, required super.name, required super.tags});
 
   @override
   String dumpAddition() {
-    return imgPath;
+    return imgName;
   }
 
   @override
   void loadAddition(String data) {
-    imgPath = data;
+    imgName = data;
   }
 
   @override
@@ -105,19 +101,18 @@ class ImageTemplateMeme extends ImageMeme {
       {required super.id,
       required super.name,
       required super.tags,
-      required super.imgPath,
       required this.blank});
 
   @override
   String dumpAddition() {
-    return json.encode({"blank": blank, "image": super.imgPath});
+    return json.encode({"blank": blank, "image": super.imgName});
   }
 
   @override
   void loadAddition(String data) {
     Map<String, dynamic> map = json.decode(data);
     blank = map["black"];
-    super.imgPath = map["image"];
+    super.imgName = map["image"];
   }
 
   @override

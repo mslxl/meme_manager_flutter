@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../messages/mlang.i18n.dart';
 import '../util/lang_builder.dart';
+import 'img_meme_editor.dart';
 import 'text_meme_editor.dart';
 
 class MemeEditorPage extends StatefulWidget {
@@ -37,7 +38,7 @@ class _MemeEditorPageState extends State<MemeEditorPage> {
           body: Container(
             padding: const EdgeInsets.all(15),
             child: const TabBarView(
-              children: [TextMemeEditor(), Text("TODO")],
+              children: [TextMemeEditor(), ImgMemeEditor()],
             ),
           ),
         ));

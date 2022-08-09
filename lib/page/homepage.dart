@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mmm/messages/mlang.i18n.dart';
-import 'package:mmm/page/meme_editor.dart';
-import 'package:mmm/page/preference.dart';
+import 'package:mmm/page/meme_editor_page.dart';
+import 'package:mmm/page/preference_page.dart';
 import 'package:mmm/page/widget/meme_card.dart';
 import 'package:mmm/util/lang_builder.dart';
 import 'package:waterfall_flow/waterfall_flow.dart';

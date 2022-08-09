@@ -1,11 +1,14 @@
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mmm/model/meme.dart';
-import 'package:mmm/page/meme_preview.dart';
+import 'package:mmm/page/img_meme_editor.dart';
+import 'package:mmm/page/meme_preview_page.dart';
 import 'package:mmm/page/page_wrapper.dart';
 import 'package:mmm/page/text_meme_editor.dart';
 import 'package:mmm/page/widget/meme_control_pane.dart';
+import 'package:mmm/util/database.dart';
 import 'package:mmm/util/lang_builder.dart';
 
 class MemeCard extends StatelessWidget {
@@ -16,7 +19,10 @@ class MemeCard extends StatelessWidget {
   Widget buildWidget(BasicMeme meme) {
     if (meme is TextMeme) {
       return TextMemeCardContent(meme: meme);
-    } else {
+    } else if(meme is ImageMeme) {
+      return ImageMemeCardContent(meme: meme);
+    }
+    else {
       return const Text("TODO");
     }
   }
@@ -84,6 +90,58 @@ class TextMemeCardContent extends StatelessWidget {
                   builder: (ctx) => PageWrapper(
                     title: meme.name,
                     child: TextMemeEditor(
+                      editTarget: meme,
+                    ),
+                  ),
+                ),
+              );
+            },
+          )
+        ],
+      ),
+    );
+  }
+}
+
+class ImageMemeCardContent extends StatelessWidget {
+  final ImageMeme meme;
+
+  const ImageMemeCardContent({Key? key, required this.meme}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+      child: Column(
+        children: [
+          GestureDetector(
+            child: FutureBuilder(
+              future: MemeDatabase().md5NameToFile(meme.imgName),
+              builder: (BuildContext context, AsyncSnapshot<File> snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  return Image.file(snapshot.data!);
+                } else {
+                  return const CircularProgressIndicator();
+                }
+              },
+            ),
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (ctx) => MemePreviewPage(memeId: meme.id)));
+            },
+          ),
+          const Divider(),
+          Text(meme.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          MemeControlPane(
+            onEdit: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => PageWrapper(
+                    title: meme.name,
+                    child: ImgMemeEditor(
                       editTarget: meme,
                     ),
                   ),

@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mmm/model/meme.dart';
 import 'package:mmm/util/conf.dart';
@@ -12,15 +14,18 @@ class MemeDatabase {
 
   MemeDatabase();
 
-  Future<String> getPath() async {
+  Future<String> getDBPath() async {
+    return join(await getStorageFolder(), "meme_index.db");
+  }
+
+  Future<String> getStorageFolder() async {
     Config cfg = await Config.getInstance();
-    String path = join(cfg.storageFolder, "meme_index.db");
-    return path;
+    return cfg.storageFolder;
   }
 
   Future<T> withDB<T>(FutureOr<T> Function(Database) op) async {
     return _lock.synchronized(() async {
-      String path = await getPath();
+      String path = await getDBPath();
       Database db = await openDatabase(path, version: 1,
           onCreate: (Database db, int version) async {
         debugPrint("Create database $path");
@@ -61,6 +66,23 @@ class MemeDatabase {
       await db.rawInsert(
           "INSERT INTO TagNSPContent(id,content) VALUES(?,?)", [nspID, tg]);
     }
+  }
+
+  Future<File> md5NameToFile(String name) async {
+    String storagePath = await getStorageFolder();
+    return File(join(storagePath, name));
+  }
+
+  Future<String> addImage(File image) async {
+    String storagePath = await getStorageFolder();
+    String imageMd5 = (await md5.bind(image.openRead()).first).toString();
+    String ext = image.path.substring(image.path.indexOf("."));
+    String newPath = join(storagePath, imageMd5 + ext);
+    if (kDebugMode) {
+      print("Copy to $newPath");
+    }
+    image.copySync(newPath);
+    return imageMd5 + ext;
   }
 
   void addMeme(BasicMeme meme, {bool updateIfExists = true}) async {
@@ -136,6 +158,14 @@ class MemeDatabase {
 
     if (type == "text") {
       var meme = TextMeme(
+        id: memeId,
+        name: name,
+        tags: tag,
+      );
+      meme.loadAddition(additionInfo);
+      return meme;
+    } else if (type == "image") {
+      var meme = ImageMeme(
         id: memeId,
         name: name,
         tags: tag,
