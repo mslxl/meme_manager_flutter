@@ -5,6 +5,20 @@ abstract class BasicMeme {
   String name;
   List<String> tags;
 
+  Map<String, List<String>> get tagsWithNSP {
+    Map<String, List<String>> map = {};
+    for (var i in tags) {
+      var item = i.split(":");
+      var key = item[0];
+      var tag = item[1];
+      if (!map.containsKey(key)) {
+        map[key] = [];
+      }
+      map[key]!.add(tag);
+    }
+    return map;
+  }
+
   BasicMeme({
     required this.id,
     required this.name,
@@ -23,13 +37,9 @@ abstract class BasicMeme {
 }
 
 class TextMeme extends BasicMeme {
-  String text;
+  late String text;
 
-  TextMeme(
-      {required super.id,
-      required super.name,
-      required super.tags,
-      required this.text});
+  TextMeme({required super.id, required super.name, required super.tags});
 
   @override
   String dumpAddition() {

@@ -1,10 +1,15 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:mmm/model/meme.dart';
 import 'package:mmm/util/conf.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:synchronized/synchronized.dart';
 
 class MemeDatabase {
+  static final _lock = Lock();
+
   MemeDatabase();
 
   Future<String> getPath() async {
@@ -13,31 +18,39 @@ class MemeDatabase {
     return path;
   }
 
-  Future<void> withDB(Function(Database) op) async {
-    String path = await getPath();
-    Database db = await openDatabase(path, version: 1,
-        onCreate: (Database db, int version) async {
-      debugPrint("Create database $path");
-      await db.execute(
-          "CREATE TABLE Meme(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type TEXT)");
-      await db.execute(
-          "CREATE TABLE Tag(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
-      await db.execute("CREATE TABLE Meme_Tag(meme INTEGER, tag INTEGER)");
-      await db.execute("CREATE TABLE Addition(id INTEGER, info TEXT)");
+  Future<T> withDB<T>(FutureOr<T> Function(Database) op) async {
+    return _lock.synchronized(() async {
+      String path = await getPath();
+      Database db = await openDatabase(path, version: 1,
+          onCreate: (Database db, int version) async {
+            debugPrint("Create database $path");
+            await db.execute(
+                "CREATE TABLE Meme(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type TEXT)");
+            await db.execute(
+                "CREATE TABLE Tag(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
+            await db.execute(
+                "CREATE TABLE Meme_Tag(meme INTEGER, tag INTEGER)");
+            await db.execute(
+                "CREATE TABLE Addition(id INTEGER PRIMARY KEY, info TEXT)");
 
-      await db.execute(
-          "CREATE TABLE TagNSP(id INTEGER PRIMARY KEY AUTOINCREMENT, nsp TEXT)");
-      await db.execute("CREATE TABLE TagNSPContent(id INTEGER, content TEXT)");
+            await db.execute(
+                "CREATE TABLE TagNSP(id INTEGER PRIMARY KEY AUTOINCREMENT, nsp TEXT)");
+            await db
+                .execute(
+                "CREATE TABLE TagNSPContent(id INTEGER, content TEXT)");
+          });
+      dynamic ret = await op(db);
+      await db.close();
+      return ret;
     });
-    await op(db);
-    await db.close();
   }
 
   void registerTagNSP(String tag, Database db) async {
     var tagSplit = tag.split(":");
-    String nsp = tagSplit[0], tg = tagSplit[1];
+    String nsp = tagSplit[0],
+        tg = tagSplit[1];
     List<Map> list =
-        await db.rawQuery("SELECT id FROM TagNSP WHERE nsp = ? LIMIT 1", [nsp]);
+    await db.rawQuery("SELECT id FROM TagNSP WHERE nsp = ? LIMIT 1", [nsp]);
     int nspID = -1;
     if (list.isEmpty) {
       nspID = await db.rawInsert("INSERT INTO TagNSP(nsp) VALUES(?)", [nsp]);
@@ -45,8 +58,8 @@ class MemeDatabase {
       nspID = list.first["id"];
     }
     if ((await db.rawQuery(
-            "SELECT id FROM TagNSPContent WHERE id = ? and content = ? LIMIT 1",
-            [nspID, tg]))
+        "SELECT id FROM TagNSPContent WHERE id = ? and content = ? LIMIT 1",
+        [nspID, tg]))
         .isEmpty) {
       await db.rawInsert(
           "INSERT INTO TagNSPContent(id,content) VALUES(?,?)", [nspID, tg]);
@@ -80,6 +93,92 @@ class MemeDatabase {
 
       await db.rawInsert("INSERT INTO Addition(id, info) VALUES(?, ?)",
           [memeId, meme.dumpAddition()]);
+    });
+  }
+
+  Future<int> count() async {
+    return await withDB((db) async {
+      List<Map> res = await db.rawQuery("SELECT COUNT() FROM Meme");
+      return res.first["COUNT()"];
+    });
+  }
+
+  Future<BasicMeme> _convertToMemeFromIdx(Map<dynamic, dynamic> index,
+      Database db) async {
+    int memeId = index["id"];
+    List<String> tag = List.empty(growable: true);
+    String name = index["name"];
+    String type = index["type"];
+
+    List<Map> tagIds =
+    await db.rawQuery("SELECT tag FROM Meme_Tag Where meme = ?", [memeId]);
+    for (var idMap in tagIds) {
+      int id = idMap["tag"];
+      List<Map> tagMap =
+      await db.rawQuery("SELECT name FROM Tag WHERE id = ?", [id]);
+      for (var item in tagMap) {
+        tag.add(item["name"]);
+      }
+    }
+    String additionInfo =
+    (await db.rawQuery("SELECT info FROM Addition WHERE id = ?", [memeId]))
+        .first["info"]
+        .toString();
+
+    if (type == "text") {
+      var meme = TextMeme(
+        id: memeId,
+        name: name,
+        tags: tag,
+      );
+      meme.loadAddition(additionInfo);
+      return meme;
+    } else {
+      throw UnimplementedError();
+    }
+  }
+
+  Future<BasicMeme> atDesc(int index) async {
+    return await withDB((db) async {
+      List<Map> idx = await db.rawQuery(
+          "SELECT * FROM Meme ORDER BY id DESC LIMIT ?,?", [index, index + 1]);
+      return _convertToMemeFromIdx(idx.first, db);
+    });
+  }
+
+  Future<BasicMeme> getById(int id) async {
+    return await withDB((db) async {
+      List<Map> idx = await db.rawQuery(
+          "SELECT * FROM Meme WHERE id = ?", [id]);
+      return _convertToMemeFromIdx(idx.first, db);
+    });
+  }
+
+  Future<List<String>> findNSPWithPrefix(String prefix) async {
+    return await withDB((db) async {
+      List<Map> list = await db.rawQuery(
+          "SELECT nsp FROM TagNSP WHERE nsp LIKE ? LIMIT 20", ["$prefix%"]);
+      List<String> res =
+      list.map((e) => e["nsp"].toString()).toList(growable: false);
+      if (kDebugMode) {
+        print("nsp with prefix: ${res.toString()}");
+      }
+      return res;
+    });
+  }
+
+  Future<List<String>> findTagWithNSPAndPrefix(String nsp,
+      String prefix) async {
+    return await withDB((db) async {
+      List<Map> list = await db.rawQuery(
+          "SELECT content FROM TagNSPContent WHERE id = (SELECT id FROM TagNSP WHERE nsp = ?) AND content LIKE ? LIMIT 20",
+          [nsp, "$prefix%"]);
+      List<String> res =
+      list.map((e) => e["content"].toString()).toList(growable: false);
+      if (kDebugMode) {
+        print("tag in nsp $nsp with prefix: ${res.toString()}");
+      }
+      return res;
     });
   }
 }

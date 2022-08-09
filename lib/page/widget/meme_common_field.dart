@@ -1,6 +1,7 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:mmm/page/widget/meme_tag_column.dart';
+import 'package:mmm/util/database.dart';
 
 import '../../messages/mlang.i18n.dart';
 import '../../util/lang_builder.dart';
@@ -57,9 +58,10 @@ class _MemeCommonFieldState extends State<MemeCommonField> {
     showDialog(
         context: context,
         builder: (_) {
-          var nspController = TextEditingController();
-          var tagController = TextEditingController();
+          String? nspText;
+          String? tagText;
           var formKey = GlobalKey<FormState>();
+
           return AlertDialog(
             title: Text(lang.editor.btn_add_tag),
             content: SingleChildScrollView(
@@ -68,30 +70,129 @@ class _MemeCommonFieldState extends State<MemeCommonField> {
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   children: [
-                    TextFormField(
-                      controller: nspController,
-                      decoration:
-                          InputDecoration(hintText: lang.dialogTag.text_nsp),
-                      validator: (text) {
-                        if (text!.contains(":")) {
-                          return "Cannot contains ':'";
-                        }
-                        return null;
+                    RawAutocomplete<String>(
+                      optionsBuilder: (TextEditingValue textEditingValue) {
+                        nspText = textEditingValue.text;
+                        return MemeDatabase()
+                            .findNSPWithPrefix(textEditingValue.text);
                       },
+                      fieldViewBuilder: (BuildContext context,
+                              TextEditingController textEditingController,
+                              FocusNode focusNode,
+                              VoidCallback onFieldSubmitted) =>
+                          TextFormField(
+                        controller: textEditingController,
+                        focusNode: focusNode,
+                        onFieldSubmitted: (_) {
+                          onFieldSubmitted();
+                        },
+                        decoration:
+                            InputDecoration(hintText: lang.dialogTag.text_nsp),
+                        validator: (text) {
+                          if (text!.contains(":")) {
+                            return "Cannot contains ':'";
+                          }
+                          return null;
+                        },
+                      ),
+                      optionsViewBuilder: (context, onSelected, options) =>
+                          Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                                bottom: Radius.circular(4.0)),
+                          ),
+                          child: SizedBox(
+                            height: 52.0 * options.length,
+                            width: (formKey.currentContext!.findRenderObject()
+                                    as RenderBox)
+                                .size
+                                .width, // <-- Right here !
+                            child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: options.length,
+                              shrinkWrap: false,
+                              itemBuilder: (BuildContext context, int index) {
+                                final String option = options.elementAt(index);
+                                return InkWell(
+                                  onTap: () => onSelected(option),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Text(option),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    TextFormField(
-                      controller: tagController,
-                      decoration:
-                          InputDecoration(hintText: lang.dialogTag.text_tag),
-                      validator: (text) {
-                        if (text?.trim().isEmpty ?? true) {
-                          return "Cannot be empty";
+                    RawAutocomplete<String>(
+                      optionsBuilder: (TextEditingValue textEditingValue) {
+                        tagText = textEditingValue.text;
+                        if (nspText != null) {
+                          return MemeDatabase().findTagWithNSPAndPrefix(
+                              nspText!, textEditingValue.text);
+                        } else {
+                          return List.empty(growable: false);
                         }
-                        if (text!.contains(":")) {
-                          return "Cannot contains ':'";
-                        }
-                        return null;
                       },
+                      fieldViewBuilder: (BuildContext context,
+                          TextEditingController textEditingController,
+                          FocusNode focusNode,
+                          VoidCallback onFieldSubmitted) {
+                        return TextFormField(
+                          controller: textEditingController,
+                          focusNode: focusNode,
+                          onFieldSubmitted: (_) {
+                            onFieldSubmitted();
+                          },
+                          decoration: InputDecoration(
+                              hintText: lang.dialogTag.text_tag),
+                          validator: (text) {
+                            if (text?.trim().isEmpty ?? true) {
+                              return "Cannot be empty";
+                            }
+                            if (text!.contains(":")) {
+                              return "Cannot contains ':'";
+                            }
+                            return null;
+                          },
+                        );
+                      },
+                      optionsViewBuilder: (context, onSelected, options) =>
+                          Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                                bottom: Radius.circular(4.0)),
+                          ),
+                          child: SizedBox(
+                            height: MediaQuery.of(context).size.height / 4,
+                            width: (formKey.currentContext!.findRenderObject()
+                                    as RenderBox)
+                                .size
+                                .width, // <-- Right here !
+                            child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: options.length,
+                              shrinkWrap: false,
+                              itemBuilder: (BuildContext context, int index) {
+                                final String option = options.elementAt(index);
+                                return InkWell(
+                                  onTap: () => onSelected(option),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Text(option),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -103,16 +204,15 @@ class _MemeCommonFieldState extends State<MemeCommonField> {
                   child: Text(lang.dialogTag.btn_cancel)),
               TextButton(
                   onPressed: () {
-                    if (tagController.text.trim().isEmpty) {
-                      tagController.text = " ";
+                    if (tagText!.trim().isEmpty) {
                       return;
                     }
                     if (formKey.currentState!.validate()) {
                       addTag(
-                          nspController.text.trim().isEmpty
+                          nspText?.trim().isEmpty ?? true
                               ? "misc"
-                              : nspController.text.trim(),
-                          tagController.text.trim());
+                              : nspText!.trim(),
+                          tagText!.trim());
                       Navigator.pop(context);
                     }
                   },
@@ -120,55 +220,6 @@ class _MemeCommonFieldState extends State<MemeCommonField> {
             ],
           );
         });
-  }
-
-  Widget buildTagsColumn(BuildContext content) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
-      child: Column(
-        children: widget.controller.tagMap.keys
-            .map((key) => Padding(
-                  padding: Platform.isWindows
-                      ? const EdgeInsets.fromLTRB(0, 3, 0, 3)
-                      : EdgeInsets.zero,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 0, 5, 0),
-                        child: Chip(
-                          backgroundColor: Colors.deepPurpleAccent,
-                          label: Text(
-                            key,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      Flexible(
-                        child: Wrap(
-                          spacing: 5,
-                          runSpacing:
-                              Platform.isWindows || Platform.isLinux ? 3 : 0,
-                          children: widget.controller.tagMap[key]!
-                              .map((tag) => Chip(
-                                  backgroundColor: Colors.blue,
-                                  label: Text(
-                                    tag,
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  deleteIconColor: Colors.white,
-                                  onDeleted: () {
-                                    removeTag(key, tag);
-                                  }))
-                              .toList(growable: false),
-                        ),
-                      ),
-                    ],
-                  ),
-                ))
-            .toList(),
-      ),
-    );
   }
 
   @override
@@ -182,19 +233,23 @@ class _MemeCommonFieldState extends State<MemeCommonField> {
               hintText: lang.editor.text_name_tip,
               prefixIcon: const Icon(Icons.textsms)),
         ),
-        buildTagsColumn(context),
+        MemeTagColumn(
+          tags: widget.controller.tagMap,
+          onDelete: removeTag,
+        ),
         Row(
           children: [
             TextButton(
-                onPressed: () {
-                  showAddTagPopup();
-                },
-                child: Row(
-                  children: [
-                    const Icon(Icons.add),
-                    Text(lang.editor.btn_add_tag),
-                  ],
-                ))
+              onPressed: () {
+                showAddTagPopup();
+              },
+              child: Row(
+                children: [
+                  const Icon(Icons.add),
+                  Text(lang.editor.btn_add_tag),
+                ],
+              ),
+            )
           ],
         )
       ],
