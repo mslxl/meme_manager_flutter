@@ -1,3 +1,6 @@
+# i18n
+/lib/messages/*.i18n.dart
+
 # Miscellaneous
 *.class
 *.log
@@ -8,6 +11,7 @@
 .buildlog/
 .history
 .svn/
+migrate_working_dir/
 
 # IntelliJ related
 *.iml

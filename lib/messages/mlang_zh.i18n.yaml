@@ -1,0 +1,37 @@
+home:
+  title: 表情包管理器
+  btn_add: 添加
+  nav_preference: 设置
+
+preview:
+  text_copied(String name): 已复制：$name
+
+preference:
+  title: 设置
+  storage_location: 存储文件夹
+
+editor:
+  title: 添加
+  ok: 添加
+  ok_edit: 应用修改
+  cancel: 取消
+  type_text: 文字
+  type_image: 图像
+  text_content: 正文
+  text_content_tip: 你能再表演一下那个吗...
+  text_name: 名称
+  text_name_tip: 文件名（不是）
+  btn_add_tag: 新标签
+  field_empty_tip: 字段不能为空
+  field_col_tip: 字段中不能含有 ':' 字符
+
+dialogTag:
+  text_nsp: 命名空间
+  text_tag: 标签
+  btn_ok: 添加
+  btn_cancel: 取消
+
+language:
+  - 英语
+  - 世界语
+  - 简体中文

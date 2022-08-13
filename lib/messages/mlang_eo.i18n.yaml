@@ -1,0 +1,38 @@
+home:
+  title: Manaĝero de memeo
+  btn_add: Aldonas
+  nav_preference: Prefero
+
+preview:
+  text_copied(String name): $name Kopis.
+
+preference:
+  title: Prefero
+  storage_location: Stokado Dosierujo
+
+
+editor:
+  title: Aldono Memeo
+  ok: Jes
+  ok_edit: Aplikas
+  cancel: Ne
+  type_text: Frazo
+  type_image: Bildo
+  text_content: Frazo
+  text_content_tip: Ĉu Esperanto estas populareca hodiaŭ?
+  text_name: Namo
+  text_name_tip: Mallonga resumo por la memeo
+  btn_add_tag: Aldonas Nova Etikedo
+  field_empty_tip: Ĝi ne povas esti malplena
+  field_col_tip: Teksto ne povas inkluzivi ':'
+
+dialogTag:
+  text_nsp: Nomspaco
+  text_tag: Etikedo
+  btn_ok: Jes
+  btn_cancel: Ne
+
+language:
+  - Angla
+  - Esperanto
+  - Simpligita ĉino

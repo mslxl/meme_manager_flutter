@@ -1,0 +1,37 @@
+home:
+  title: Meme Manager
+  btn_add: Add
+  nav_preference: Preference
+
+preview:
+  text_copied(String name): $name Copied.
+
+preference:
+  title: Preference
+  storage_location: Storage Folder
+
+editor:
+  title: Add Meme
+  ok: Done
+  ok_edit: Apply
+  cancel: Cancel
+  type_text: Text
+  type_image: Image
+  text_content: Meme
+  text_content_tip: A man is walking past a travel agents office when...
+  text_name: Name
+  text_name_tip: A short summary for the meme
+  btn_add_tag: Add New Tag
+  field_empty_tip: Field can't be empty
+  field_col_tip: Text can't include ':'
+
+dialogTag:
+  text_nsp: Namespace
+  text_tag: Tag
+  btn_ok: Apply
+  btn_cancel: Cancel
+
+language:
+  - English
+  - Esperanto
+  - Simplified Chinese
