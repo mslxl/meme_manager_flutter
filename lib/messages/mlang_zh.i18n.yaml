@@ -7,8 +7,10 @@ preview:
   text_copied(String name): 已复制：$name
 
 preference:
+  tip: 部分设置将在重启后生效
   title: 设置
   storage_location: 存储文件夹
+  number_colum: 主页展示列数
 
 editor:
   title: 添加

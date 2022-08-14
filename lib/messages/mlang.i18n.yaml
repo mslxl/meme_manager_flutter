@@ -7,8 +7,10 @@ preview:
   text_copied(String name): $name Copied.
 
 preference:
+  tip: Some of configurations take effect after restart.
   title: Preference
   storage_location: Storage Folder
+  number_colum: Number of colum
 
 editor:
   title: Add Meme

@@ -7,8 +7,10 @@ preview:
   text_copied(String name): $name Kopis.
 
 preference:
+  tip: Iuj el agordoj ekvalidas post rekomenco.
   title: Prefero
   storage_location: Stokado Dosierujo
+  number_colum: Hejmpaĝo Vidigu Kolumnojn
 
 
 editor:

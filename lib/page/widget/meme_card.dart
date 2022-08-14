@@ -19,10 +19,9 @@ class MemeCard extends StatelessWidget {
   Widget buildWidget(BasicMeme meme) {
     if (meme is TextMeme) {
       return TextMemeCardContent(meme: meme);
-    } else if(meme is ImageMeme) {
+    } else if (meme is ImageMeme) {
       return ImageMemeCardContent(meme: meme);
-    }
-    else {
+    } else {
       return const Text("TODO");
     }
   }
@@ -37,9 +36,10 @@ class MemeCard extends StatelessWidget {
             BasicMeme meme = snapshot.data!;
             return buildWidget(meme);
           } else {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20),
+            return SizedBox(
+              height: MediaQuery.of(context).size.height / 3,
+              width: 200,
+              child: const Center(
                 child: CircularProgressIndicator(),
               ),
             );

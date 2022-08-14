@@ -8,6 +8,7 @@ import 'package:mmm/util/conf.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:synchronized/synchronized.dart';
+import 'package:uuid/uuid.dart';
 
 class MemeDatabase {
   static final _lock = Lock();
@@ -30,7 +31,7 @@ class MemeDatabase {
           onCreate: (Database db, int version) async {
         debugPrint("Create database $path");
         await db.execute(
-            "CREATE TABLE Meme(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type TEXT)");
+            "CREATE TABLE Meme(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type TEXT, time INTEGER, uuid TEXT)");
         await db.execute(
             "CREATE TABLE Tag(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
         await db.execute("CREATE TABLE Meme_Tag(meme INTEGER, tag INTEGER)");
@@ -85,6 +86,10 @@ class MemeDatabase {
     return imageMd5 + ext;
   }
 
+  int _timeStamp() {
+    return DateTime.now().millisecondsSinceEpoch;
+  }
+
   void addMeme(BasicMeme meme, {bool updateIfExists = true}) async {
     await withDB((db) async {
       List<int> tagId = List<int>.empty(growable: true);
@@ -107,6 +112,8 @@ class MemeDatabase {
         List<Map> record =
             await db.rawQuery("SELECT id FROM Meme WHERE id = ?", [memeId]);
         if (record.isNotEmpty) {
+          await db.rawUpdate(
+              "UPDATE Meme SET time = ? WHERE id = ?", [_timeStamp(), memeId]);
           await db.rawDelete("DELETE FROM Meme_Tag WHERE meme = ?", [memeId]);
           await db.rawUpdate("UPDATE Addition SET info = ? WHERE id = ?",
               [meme.dumpAddition(), memeId]);
@@ -114,8 +121,12 @@ class MemeDatabase {
         }
       }
       if (!updateSuccessful) {
-        memeId = await db.rawInsert("INSERT INTO Meme(name, type) VALUES(?,?)",
-            [meme.name, meme.getType()]);
+        Uuid uuidGen = Uuid();
+        var timeStamp = _timeStamp();
+        String uuid = uuidGen.v4();
+        memeId = await db.rawInsert(
+            "INSERT INTO Meme(name, type, time, uuid) VALUES(?,?,?,?)",
+            [meme.name, meme.getType(), timeStamp, uuid]);
 
         await db.rawInsert("INSERT INTO Addition(id, info) VALUES(?, ?)",
             [memeId, meme.dumpAddition()]);
@@ -180,7 +191,7 @@ class MemeDatabase {
   Future<BasicMeme> atDesc(int index) async {
     return await withDB((db) async {
       List<Map> idx = await db.rawQuery(
-          "SELECT * FROM Meme ORDER BY id DESC LIMIT ?,?", [index, index + 1]);
+          "SELECT * FROM Meme ORDER BY time DESC LIMIT ?,?", [index, index + 1]);
       return _convertToMemeFromIdx(idx.first, db);
     });
   }

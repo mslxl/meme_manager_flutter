@@ -42,23 +42,24 @@ class Config {
     return _currentLang;
   }
 
-  void setStorageFolder(String folder) async {
+  Future<void> setStorageFolder(String folder) async {
     _storageFolder = folder;
     await withSharedPref((pref) {
       pref.setString("storage_folder", _storageFolder!);
     });
   }
 
-  void setLang(int i) async {
+  Future<void> setLang(int i) async {
     _currentLang = i;
     await withSharedPref((pref) {
       pref.setInt("lang", _currentLang);
     });
   }
-  void setHomeRow(int i) async {
+  Future<void> setHomeRow(int i) async {
     _homeRow = i;
     await withSharedPref((pref) {
-      pref.setInt("row_home", _currentLang);
+      print("Set to " + i.toString());
+      pref.setInt("row_home", _homeRow);
     });
   }
 }
